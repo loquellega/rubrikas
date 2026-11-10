@@ -1,0 +1,81 @@
+<!doctype html>
+<!--
+  Rubrikas · panel
+  Parte de la colección Alchemy of Meaning (Alquimia del Significado).
+  © 2026 Héctor Cruz Juárez · https://hectorcruz.com.mx
+  Software libre bajo licencia GPL-3.0-or-later.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#ffffff">
+<title>Rubrikas</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%233d8b10'/%3E%3Cpath d='M6 21c4-9 7-12 9-9s-3 9 1 7 5-9 8-8-1 7 3 5' stroke='%23fff' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="estilo.css">
+<style>
+  .contenido{max-width:960px;margin:0 auto;padding:26px 18px 140px;display:grid;gap:18px}
+  .entrar{max-width:380px;margin:12vh auto 0;display:grid;gap:14px}
+  .hero{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .seccion{display:grid;gap:10px}
+  .seccion>h3{color:var(--tenue);font-size:14px;text-transform:uppercase;letter-spacing:.04em}
+  .envio{display:grid;grid-template-columns:1fr auto;gap:8px 16px;align-items:center;cursor:pointer;padding:18px 20px}
+  .envio:hover{box-shadow:0 2px 4px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.08)}
+  .envio .personas{display:flex;gap:4px}
+  .envio .avance{grid-column:1/-1}
+  .vacio{text-align:center;padding:50px 20px;color:var(--tenue)}
+  .vacio svg{width:56px;height:56px;margin-bottom:10px}
+  .paso{display:grid;gap:14px}
+  .paso-cab{display:flex;gap:12px;align-items:center}
+  .paso-num{width:32px;height:32px;border-radius:50%;background:var(--primario);color:#fff;font-weight:700;display:grid;place-items:center;flex:none}
+  .paso.apagado .paso-num{background:#cfcdc5}
+  .paso.apagado>*:not(.paso-cab){opacity:.5;pointer-events:none}
+  .soltar{border:2px dashed #cfcdc5;border-radius:var(--radio);padding:34px 20px;text-align:center;cursor:pointer;background:#fbfbf9;transition:.15s}
+  .soltar:hover,.soltar.sobre{border-color:var(--primario);background:var(--primario-claro)}
+  .soltar b{display:block;font-size:17px;margin-bottom:4px}
+  .docs{display:flex;gap:8px;flex-wrap:wrap}
+  .doc{display:inline-flex;align-items:center;gap:8px;background:#f2f1ec;border-radius:10px;padding:8px 6px 8px 12px;font-size:14px;max-width:100%}
+  .doc span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .doc button{border:0;background:none;padding:2px 8px;font-size:18px;color:var(--tenue)}
+  .persona{display:grid;grid-template-columns:34px 1fr 1fr auto;gap:10px;align-items:center}
+  .persona .quitar{border:0;background:none;font-size:20px;color:var(--tenue);padding:4px 8px}
+  @media (max-width:640px){.persona{grid-template-columns:34px 1fr auto}.persona .correo{grid-column:2/3}}
+  .quienes{display:flex;gap:8px;flex-wrap:wrap}
+  .quien{border:2px solid transparent;background:#f2f1ec;padding:6px 14px 6px 6px;font-weight:600}
+  .quien.activo{border-color:var(--c);background:color-mix(in srgb,var(--c) 12%,#fff)}
+  .quien .avatar{width:28px;height:28px;font-size:12px}
+  .tipos{display:inline-flex;background:#f2f1ec;border-radius:999px;padding:3px}
+  .tipos button{border:0;background:none;padding:6px 14px;font-size:14px}
+  .tipos button.activo{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .hojas{background:#ebeae4;border-radius:var(--radio);padding:34px 14px 20px;max-height:none}
+  .pagina{cursor:copy}
+  .pagina.solo,.pagina.solo .campo{cursor:default}
+  .pagina .campo{cursor:grab}
+  .barra{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--linea);padding:14px 20px;z-index:30;box-shadow:0 -4px 20px rgba(0,0,0,.05)}
+  .barra>div{max-width:960px;margin:0 auto;display:flex;align-items:center;gap:14px}
+  .persona-estado{display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--linea)}
+  .persona-estado:first-child{border-top:0}
+  .acciones{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .acciones button,.acciones .boton{font-size:14px;padding:8px 12px}
+  details>summary{cursor:pointer;font-weight:600;color:var(--primario-osc);list-style:none}
+  details>summary::before{content:"▸ ";}
+  details[open]>summary::before{content:"▾ ";}
+  .historial{font-size:14px;color:var(--tenue);display:grid;gap:4px;margin-top:10px;max-height:300px;overflow:auto}
+  .grande-estado{font-size:22px;font-weight:700}
+  .logo-grande{display:grid;place-items:center}.logo-grande svg{width:60px;height:60px}
+  .ok-circulo{width:64px;height:64px;border-radius:50%;background:var(--primario-claro);color:var(--primario);display:grid;place-items:center;font-size:34px;margin:0 auto}
+</style>
+<script src="lib/pdf-lib.min.js"></script>
+</head>
+<body>
+<header class="cabeza">
+  <a class="logo" id="logo" href="#"></a>
+  <span class="crece"></span>
+  <button class="enlace oculto" id="bAjustes">Ajustes</button>
+  <button class="enlace oculto" id="bSalir">Salir</button>
+</header>
+<main id="main"></main>
+<script type="module" src="panel.js"></script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!doctype html>
+<!--
+  Rubrikas · verificar un PDF firmado
+  Parte de la colección Alchemy of Meaning (Alquimia del Significado).
+  © 2026 Héctor Cruz Juárez · https://hectorcruz.com.mx
+  Software libre bajo licencia GPL-3.0-or-later.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comprobar · Rubrikas</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%233d8b10'/%3E%3Cpath d='M6 21c4-9 7-12 9-9s-3 9 1 7 5-9 8-8-1 7 3 5' stroke='%23fff' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="estilo.css">
+<style>
+  .contenido{max-width:620px;margin:0 auto;padding:30px 16px;display:grid;gap:16px}
+  .soltar{border:2px dashed #cfcdc5;border-radius:var(--radio);padding:40px 16px;text-align:center;cursor:pointer;background:#fbfbf9;display:block}
+  .soltar:hover,.soltar.sobre{border-color:var(--primario);background:var(--primario-claro)}
+  .soltar b{display:block;font-size:17px}
+  .hash{font:12px ui-monospace,monospace;word-break:break-all;color:var(--tenue);margin-top:8px}
+  .res{display:grid;gap:6px}
+</style>
+</head>
+<body>
+<header class="cabeza"><span class="logo" id="logo"></span><span class="crece"></span></header>
+<div class="contenido">
+  <div class="tarjeta" style="display:grid;gap:14px">
+    <h1>Comprobar un documento firmado</h1>
+    <p class="tenue">Revisa si un PDF es exactamente el que se firmó. El archivo no se sube: se revisa en tu dispositivo.</p>
+    <label class="soltar" id="soltar"><b>Arrastra aquí el PDF</b><span class="tenue">o toca para elegirlo</span><input type="file" accept="application/pdf,.pdf" id="archivo" class="oculto"></label>
+    <div id="res" class="res"></div>
+  </div>
+</div>
+<script type="module">
+import {$, el, api, acercaDe, sha256hex, LOGO} from './comun.js';
+$('#logo').innerHTML = LOGO + '<span>Rubrikas</span>'; $('#logo').onclick = acercaDe;
+const z = $('#soltar'), res = $('#res');
+const f = d => d ? new Date(d).toLocaleString('es-MX', {dateStyle: 'long', timeStyle: 'short'}) : '';
+async function revisar(a) {
+  if (!a) return;
+  res.replaceChildren(el('p', {class: 'tenue'}, 'Revisando…'));
+  const h = await sha256hex(await a.arrayBuffer());
+  let r;
+  try { r = await api('verificar', {params: {h}}); } catch (e) { return res.replaceChildren(el('p', {class: 'rojo'}, e.message)); }
+  const huella = el('div', {class: 'hash'}, a.name + ' · huella ' + h);
+  if (r.ok && r.tipo === 'final') res.replaceChildren(
+    el('p', {class: 'estado ok', style: {fontSize: '16px', justifySelf: 'start'}}, '✓ Es el documento firmado, sin cambios'),
+    el('p', {}, el('b', {}, r.documento.replace(/\.pdf$/i, '')), ' · ', r.titulo),
+    ...r.firmantes.map(x => el('p', {class: 'chico'}, '✓ ' + x.nombre + ' firmó el ' + f(x.firmado))), huella);
+  else if (r.ok) res.replaceChildren(el('p', {class: 'estado espera', style: {fontSize: '16px', justifySelf: 'start'}}, 'Es el original, todavía sin firmas'),
+    el('p', {}, `«${r.documento}» de «${r.titulo}».`), huella);
+  else res.replaceChildren(el('p', {class: 'estado mal', style: {fontSize: '16px', justifySelf: 'start'}}, '✗ No coincide'),
+    el('p', {class: 'tenue chico'}, 'O no se firmó aquí, o el archivo cambió después de firmarse. Ojo: volver a guardarlo, imprimirlo a PDF o comprimirlo también lo cambia.'), huella);
+}
+$('#archivo').onchange = e => revisar(e.target.files[0]);
+z.ondragover = e => { e.preventDefault(); z.classList.add('sobre'); };
+z.ondragleave = () => z.classList.remove('sobre');
+z.ondrop = e => { e.preventDefault(); z.classList.remove('sobre'); revisar(e.dataTransfer.files[0]); };
+</script>
+</body>
+</html>

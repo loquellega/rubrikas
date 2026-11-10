@@ -1,0 +1,6 @@
+# Datos del servidor: envíos, firmas, contraseña. Nunca se suben.
+data/
+*.zip
+node_modules/
+.DS_Store
+Thumbs.db

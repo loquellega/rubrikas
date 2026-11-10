@@ -1,0 +1,169 @@
+RUBRIKAS 0.6
+Firma de documentos PDF en tu propio servidor
+Parte de la colección Alchemy of Meaning (Alquimia del Significado)
+© 2026 Héctor Cruz Juárez · https://hectorcruz.com.mx
+Software libre bajo licencia GPL-3.0-or-later (ver LICENSE)
+
+
+QUÉ HACE
+--------
+- Juntas uno o varios PDF en un "sobre" y le agregas a las personas que firman.
+- Los PDF se suben tal como están. Las líneas hechas con guiones bajos
+  ("__________") se detectan solas y se proponen como lugares de firma. Los
+  demás lugares se marcan con un clic. Tipos de campo: firma, iniciales,
+  fecha, nombre y texto.
+- Un campo se puede repetir en todas las páginas o en el mismo lugar de todos
+  los documentos (útil para firmar muchas cesiones o contratos iguales).
+- Cada firmante recibe un enlace personal. Ahí lee los documentos y dibuja su
+  firma o sube un PNG o JPG; la misma firma se pone en todos sus lugares.
+- Opcional: firmar en orden y pedir un código por correo antes de firmar.
+- Cuando todos firmaron, el panel genera los PDF finales: estampa las firmas y
+  agrega una hoja de constancia con la huella SHA-256 del original y de cada
+  firma, las fechas, la IP, el navegador y la bitácora.
+- verificar.html ("Comprobar") comprueba si un PDF es exactamente el que se firmó. El archivo
+  se revisa en el navegador y no se sube.
+
+
+INSTALAR
+--------
+1. Sube la carpeta rubrikas/ a tu hosting, por ejemplo a
+   https://tudominio.com/rubrikas/  (necesita PHP 8.0 o más reciente y HTTPS).
+2. Abre esa dirección y crea la contraseña del panel.
+3. En "ajustes":
+   - mi nombre: para el botón "+ yo" y para el saludo de los firmantes.
+   - correo: activa "mandar correos desde el hosting" con un remitente de tu
+     dominio (por ejemplo firmas@tudominio.com) y pulsa "probar correo".
+     Si el hosting no manda correo, no pasa nada: copia los enlaces y mándalos
+     por WhatsApp o por tu correo. El código de verificación sí necesita correo.
+4. Comprueba que https://tudominio.com/rubrikas/data/config.json NO se abre
+   (debe dar error 403). La carpeta data/ trae su propio .htaccess. Si tu
+   servidor no es Apache (nginx), bloquea data/ en su configuración.
+
+Tamaño de los archivos: .user.ini pide 30 MB por archivo. Si tu hosting no lo
+respeta, súbelo en su panel (upload_max_filesize y post_max_size).
+
+
+USO
+---
+Panel (index.html)
+  "+ Mandar a firmar" y tres pasos en una sola pantalla:
+    1. Sube los documentos (arrastra uno o varios PDF).
+    2. ¿Quién firma? Nombre y correo. "+ Yo también firmo" te agrega a ti.
+    3. Marca dónde firma cada quien. Las líneas "_____" ya vienen marcadas y
+       repartidas en orden. Para otro lugar: elige a la persona, elige Firma,
+       Fecha, Texto o Iniciales y toca el documento. Al tocar un recuadro puedes
+       cambiar a quién le toca, copiarlo "En todos" los documentos o quitarlo.
+  "Enviar para firmar". En "Más opciones": mensaje, firmar en orden y código
+  por correo.
+  Todos firman al mismo tiempo, cada quien con su enlace, salvo que actives
+  "Que firmen en orden".
+  Cuando firman todos, los PDF firmados se preparan solos al abrir el panel.
+
+Documentos de Word (.docx)
+  Se suben igual que un PDF. Los lugares para firmar se marcan en Word:
+    - una línea larga de guiones bajos (15 o más): _______________
+    - o una etiqueta escrita en el texto: {firma Vivian}, {iniciales Vivian},
+      {fecha Vivian}, {nombre Vivian}, {texto Vivian}
+  Las líneas cortas (como "a ____ de ______") no cuentan como firma.
+  Si las etiquetas traen nombre, esas personas se agregan solas y su lugar ya
+  queda asignado; las líneas sueltas se reparten en orden entre las demás.
+  En Word no se arrastran los lugares: van pegados a su línea o etiqueta,
+  para que la firma se mueva con el texto. Un lugar sin asignar se ve como
+  "+ lugar": tócalo para ponerle persona y tipo.
+  Al final se descargan dos archivos: el Word firmado (las firmas van como
+  imágenes ancladas a su línea, con la hoja de constancia al final y marcado
+  de solo lectura) y un PDF de respaldo hecho desde la vista del documento.
+  Los dos quedan registrados para "Comprobar". La vista en el navegador es muy
+  parecida a Word, no idéntica; el archivo Word final es el que vale.
+
+Tu firma en PNG
+  Súbela en Ajustes o al pulsar "+ Yo también firmo". Si estás entre quienes
+  firman, tu firma se coloca sola en tus lugares al enviar, sin abrir ningún
+  enlace. La constancia lo registra como "firmó desde el panel, con su
+  contraseña". Si tienes campos de texto, firmas con tu enlace como los demás.
+  En el editor, al tocar uno de tus recuadros: − y + cambian el tamaño de tu
+  firma, ↑ y ↓ la suben o la bajan sobre la línea.
+
+Quien firma (firmar.html#enlace)
+  Lee los documentos, toca "Firmar aquí", dibuja su firma o sube una imagen
+  (se le quita el fondo blanco) y la firma se pone en todos sus lugares. Al
+  final, "Terminar y firmar". También puede decir que no firmará y por qué.
+  Ya puesta, al tocar la firma se ajusta: arrastrar para moverla, pellizcar
+  con dos dedos (o los botones − y +, o la rueda del ratón) para el tamaño.
+  Por omisión la base "muerde" un poco la línea, como una firma a mano, y la
+  firma puede salirse del recuadro. El ajuste vale para todos sus lugares y
+  el PDF final queda igual a lo que se ve.
+  Cuando firman todos, descarga su copia desde el mismo enlace.
+
+SOBRE LA VALIDEZ
+----------------
+No es asesoría legal. En México, una firma dibujada o en imagen es una firma
+electrónica simple (Código de Comercio). Vale como prueba y pesa más con la
+constancia, el código por correo y la huella registrada en el servidor. No da
+la fe de un tercero: para documentos de mucho peso conviene la e.firma del SAT
+o una constancia de conservación NOM-151 de un prestador de servicios de
+certificación.
+
+
+DATOS
+-----
+Todo vive en data/ (JSON y archivos, sin base de datos):
+  data/config.json              ajustes y contraseña (cifrada)
+  data/tokens.json              índice de enlaces (huellas SHA-256)
+  data/sobres/<id>/sobre.json   el sobre, sus firmantes, campos y bitácora
+  data/sobres/<id>/docs/        PDF originales
+  data/sobres/<id>/firmas/      imágenes de firma
+  data/sobres/<id>/final/       PDF firmados
+Respaldo: copia la carpeta data/ completa.
+Los sobres firmados no se borran desde el panel (solo borradores y anulados).
+
+
+ARCHIVOS
+--------
+index.html, panel.js     panel
+firmar.html, firmar.js   página de firma
+verificar.html           verificación pública
+comun.js, estilo.css     compartidos
+api.php, comun.php       servidor
+docx.js                  documentos de Word
+lib/                     pdf.js 4.10 (Apache-2.0), pdf-lib 1.17 (MIT), JSZip 3.10 (MIT o GPL-3.0),
+                         docx-preview 0.3 (Apache-2.0) y html2canvas 1.4 (MIT), con sus licencias
+
+
+HISTORIAL
+---------
+0.6 (9 de noviembre de 2026)
+  Firmar documentos de Word (.docx) y conservarlos en Word: lugares por
+  líneas largas o etiquetas {firma Nombre}; las firmas se insertan ancladas a
+  su línea; constancia al final; solo lectura; PDF de respaldo. La app ya no
+  se queda con versiones viejas guardadas en el navegador (.htaccess).
+
+0.5 (3 de noviembre de 2026)
+  Ajustar la firma ya colocada: mover, pellizcar o − y + para el tamaño; la
+  base muerde la línea por omisión y la firma puede salir del recuadro (útil
+  para firmas verticales). El PDF final respeta el ajuste. Tu firma del panel
+  también se ajusta en el editor (− + ↑ ↓).
+
+0.4 (2 de noviembre de 2026)
+  La vista previa del panel muestra las firmas, fechas y textos de quien ya
+  firmó, aunque falten otros. Quien firma también ve, en su página, las
+  firmas que ya pusieron los demás. Corregido: "+ Agregar persona" no
+  agregaba una fila cuando la primera estaba vacía.
+
+0.3 (2 de noviembre de 2026)
+  Las líneas detectadas se reparten en orden de lectura en todo el documento
+  (1ª línea a la 1ª persona, aunque estén en páginas distintas). Correo a ti
+  con el avance ("Firmó Ana (3 de 5)") y otro claro cuando firman todos, con
+  el enlace directo al envío. Aviso si alguien no tiene correo.
+
+0.2 (2 de noviembre de 2026)
+  Interfaz nueva, clara y pensada para cualquier persona: tres pasos en una
+  pantalla, tarjetas de envíos con avance, página de firma para teléfono con
+  un solo botón. Tu firma PNG guardada se coloca sola al enviar. Los PDF
+  firmados se preparan solos. Comprobar documentos con diseño nuevo.
+
+0.1 (2 de noviembre de 2026)
+  Primera versión: sobres con varios PDF y varios firmantes, detección de
+  líneas, campos de firma, iniciales, fecha, nombre y texto; firma dibujada o
+  en imagen; orden de firma; código por correo; rechazo con motivo; PDF final
+  con constancia y huellas; verificación por huella; enlaces para WhatsApp.
