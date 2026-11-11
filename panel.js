@@ -153,7 +153,7 @@ function editor() {
   const paso2 = el('div', {class: 'tarjeta paso'}, cabPaso(2, '¿Quién firma?'), personas,
     el('div', {class: 'fila'},
       el('button', {onclick: () => agregarPersona('')}, '+ Agregar persona'),
-      el('button', {id: 'bYo', onclick: () => agregarPersona(E.ajustes?.mi_nombre || '', E.ajustes?.aviso_a || '', true, true)}, '+ Yo también firmo')));
+      el('button', {id: 'bYo', onclick: () => agregarPersona(E.ajustes?.mi_nombre || '', (E.ajustes?.aviso_a || '').split(/[\s,;]+/)[0] || '', true, true)}, '+ Yo también firmo')));
 
   // paso 3
   const quienes = el('div', {class: 'quienes'});
@@ -167,11 +167,15 @@ function editor() {
 
   // más opciones
   const msj = el('textarea', {rows: 3, maxlength: 2000, placeholder: 'Ej. Hola, te comparto la cesión de derechos para revisar y firmar. ¡Gracias!', oninput: e => { E.sobre && (E.sobre.mensaje = e.target.value, guardarLuego()); }}, S?.mensaje || '');
+  const observan = el('input', {value: (S?.observadores || []).map(o => o.correo).join(', '), placeholder: 'correo@ejemplo.com, otro@ejemplo.com',
+    oninput: e => { E.sobre && (E.sobre.observadores = e.target.value, guardarLuego()); }});
   const orden = el('input', {type: 'checkbox', checked: !!S?.orden, onchange: e => { E.sobre && (E.sobre.orden = e.target.checked, guardarLuego()); }});
   const codigo = el('input', {type: 'checkbox', checked: !!S?.codigo, disabled: !E.ses.correo, onchange: e => { E.sobre && (E.sobre.codigo = e.target.checked, guardarLuego()); }});
   const mas = el('details', {class: 'tarjeta'}, el('summary', {}, 'Más opciones'),
     el('div', {style: {display: 'grid', gap: '14px', marginTop: '14px'}},
       el('label', {}, el('div', {class: 'chico', style: {fontWeight: 600, marginBottom: '6px'}}, 'Mensaje para quienes firman'), msj),
+      el('label', {}, el('div', {class: 'chico', style: {fontWeight: 600, marginBottom: '6px'}}, 'Avisar también a'), observan,
+        el('div', {class: 'tenue chico', style: {marginTop: '4px'}}, 'Correos separados por comas. Reciben el avance de este envío y, al final, un enlace para descargar los documentos firmados. No firman ni entran a tu panel.')),
       el('label', {class: 'casilla'}, orden, el('span', {}, 'Que firmen en orden', el('div', {class: 'tenue chico'}, 'La segunda persona recibe su turno cuando firma la primera, y así.'))),
       el('label', {class: 'casilla'}, codigo, el('span', {}, 'Pedir un código por correo antes de firmar',
         el('div', {class: 'tenue chico'}, E.ses.correo ? 'Más seguridad: confirma que quien firma es dueño de su correo.' : 'Necesita activar el envío de correos en Ajustes.'))),
@@ -514,7 +518,8 @@ function guardarLuego() { clearTimeout(E.guardarT); E.guardarT = setTimeout(guar
 async function guardar() {
   clearTimeout(E.guardarT); E.guardarT = 0;
   const S = E.sobre; if (!S || S.estado !== 'borrador') return;
-  try { await api('guardar', {datos: {id: S.id, titulo: S.titulo, mensaje: S.mensaje, orden: S.orden, codigo: S.codigo, firmantes: S.firmantes, campos: S.campos}}); }
+  const obs = typeof S.observadores === 'string' ? S.observadores : (S.observadores || []).map(o => o.correo).join(',');
+  try { await api('guardar', {datos: {id: S.id, titulo: S.titulo, mensaje: S.mensaje, orden: S.orden, codigo: S.codigo, firmantes: S.firmantes, campos: S.campos, observadores: obs}}); }
   catch (e) { aviso('No se guardó: ' + e.message, true); }
 }
 addEventListener('beforeunload', () => { if (E.guardarT) guardar(); });
@@ -587,6 +592,7 @@ async function detalle() {
     el('div', {class: 'tarjeta', style: {display: 'grid', gap: '14px'}},
       el('div', {class: 'fila'}, el('h1', {class: 'crece'}, S.titulo), el('span', {class: 'estado ' + cls}, txt)),
       el('p', {class: 'tenue chico'}, `${plural(S.docs.length, 'documento', 'documentos')}: ${S.docs.map(d => sinPdf(d.nombre)).join(', ')} · enviado ${fecha(S.enviado)}`),
+      S.observadores?.length ? el('p', {class: 'tenue chico'}, 'También reciben avisos: ' + S.observadores.map(o => o.correo).join(', ')) : '',
       el('div', {}, el('div', {class: 'fila chico', style: {marginBottom: '6px'}}, el('b', {}, `${n} de ${t} firmaron`)), el('div', {class: 'avance'}, el('i', {style: {width: (n / t * 100) + '%'}}))),
       S.estado === 'firmado' ? el('p', {class: 'verde', id: 'preparando'}, 'Firmaron todos. Preparando tus documentos firmados…') : '',
       S.estado === 'rechazado' ? el('p', {class: 'rojo'}, 'Alguien no quiso firmar, así que el envío se detuvo. Corrige el documento y manda uno nuevo.') : '',
@@ -764,7 +770,7 @@ async function verAjustes() {
   const cn = el('input', {type: 'password', autocomplete: 'new-password', placeholder: 'Contraseña nueva'});
   const v = dialogo('Ajustes', [
     campo('mi_nombre', 'Tu nombre', {placeholder: 'Como aparecerá al pedir firmas'}),
-    campo('aviso_a', 'Avísame a este correo', {type: 'email'}, 'Cuando alguien firma o no quiere firmar.'),
+    campo('aviso_a', 'Avísame a estos correos', {placeholder: 'tu@correo.com, otra@persona.com'}, 'Cuando alguien firma, cuando firman todos o cuando alguien no quiere firmar. Puedes poner varios, separados por comas: reciben el aviso de todos tus envíos, con el enlace a tu panel.'),
     el('div', {}, el('div', {class: 'chico', style: {fontWeight: 600, marginBottom: '6px'}}, 'Tu firma'),
       el('div', {class: 'fila'}, a.tiene_firma ? el('img', {src: 'api.php?a=mi_firma&v=' + E.firmaV, style: {height: '44px', maxWidth: '160px', objectFit: 'contain'}}) : el('span', {class: 'tenue chico'}, 'Aún no la subes.'),
         el('button', {onclick: () => { v.remove(); pedirMiFirma(); }}, a.tiene_firma ? 'Cambiar' : 'Subir PNG'))),

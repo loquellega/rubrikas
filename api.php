@@ -118,6 +118,17 @@ case 'f_doc': // PDF original (o el firmado, si ya está completo)
   }
   error_json('documento no encontrado', 404);
 
+case 'o_zip': // quien sigue un envío descarga los documentos firmados
+  $t = (string)($_GET['t'] ?? '');
+  if (!preg_match('/^[a-f0-9]{40}$/', $t)) error_json('enlace inválido', 404);
+  foreach (lista_sobres() as $s) foreach ($s['observadores'] ?? [] as $o) {
+    if (empty($o['token']) || !hash_equals($o['token'], $t)) continue;
+    if ($s['estado'] === 'anulado') error_json('este envío fue cancelado', 410);
+    if (empty($s['final'])) error_json('todavía no terminan de firmar', 409);
+    enviar_zip($s);
+  }
+  error_json('enlace inválido', 404);
+
 case 'f_img': // firma de otra persona del mismo sobre que ya firmó
   [$s, $i] = por_token((string)($_GET['t'] ?? ''));
   $n = basename((string)($_GET['n'] ?? ''));
@@ -220,13 +231,10 @@ case 'f_firmar':
   });
   avisar_siguiente($s);
   $c = cfg();
-  if (!empty($c['aviso_a'])) {
-    $n = count(array_filter($s['firmantes'], fn($x) => $x['estado'] === 'firmado')); $t = count($s['firmantes']);
-    $panel = url_base() . '/#' . $s['id'];
-    if ($s['estado'] === 'firmado') correo($c['aviso_a'], "Ya firmaron todos · {$s['titulo']}",
-      "¡Listo! Las $t personas firmaron «{$s['titulo']}».\n\nAbre Rubrikas para descargar los documentos firmados (al abrirlo se preparan y se avisa a cada persona que ya puede bajar su copia):\n$panel\n");
-    else correo($c['aviso_a'], "Firmó {$f['nombre']} ($n de $t) · {$s['titulo']}", "{$f['nombre']} firmó «{$s['titulo']}». Van $n de $t firmas.\n\n$panel\n");
-  }
+  $n = count(array_filter($s['firmantes'], fn($x) => $x['estado'] === 'firmado')); $t = count($s['firmantes']);
+  if ($s['estado'] === 'firmado') // a quienes siguen el envío se les avisa cuando ya pueden descargar (al preparar los archivos finales)
+    avisar($s, "Ya firmaron todos · {$s['titulo']}", "¡Listo! Las $t personas firmaron «{$s['titulo']}».\nAl abrir Rubrikas se preparan los documentos firmados y se avisa a cada persona.\n", false);
+  else avisar($s, "Firmó {$f['nombre']} ($n de $t) · {$s['titulo']}", "{$f['nombre']} firmó «{$s['titulo']}». Van $n de $t firmas.\n");
   salir_json(['ok' => true, 'completo' => $s['estado'] === 'firmado']);
 
 case 'f_rechazar':
@@ -243,8 +251,7 @@ case 'f_rechazar':
     $s['estado'] = 'rechazado';
     evento($s, $f['nombre'], 'rechazó firmar' . ($motivo ? ": $motivo" : ''));
   });
-  $c = cfg();
-  if (!empty($c['aviso_a'])) correo($c['aviso_a'], "Rechazado · {$s['titulo']}", "{$s['firmantes'][$i]['nombre']} rechazó firmar «{$s['titulo']}».\n\nMotivo: $motivo\n");
+  avisar($s, "No firmó · {$s['titulo']}", "{$s['firmantes'][$i]['nombre']} no quiso firmar «{$s['titulo']}», así que el envío se detuvo.\n" . ($motivo ? "Motivo: $motivo\n" : ''));
   salir_json(['ok' => true]);
 }
 
@@ -294,7 +301,7 @@ case 'mi_firma': // la firma en imagen del dueño del panel, para firmar sus env
 
 case 'prueba_correo':
   $c = cfg();
-  $ok = correo($c['aviso_a'] ?: $c['correo_desde'], 'Prueba de Rubrikas', "Si lees esto, el correo del hosting funciona.\n");
+  $ok = correo(lista_correos($c['aviso_a'] ?? '')[0] ?? $c['correo_desde'], 'Prueba de Rubrikas', "Si lees esto, el correo del hosting funciona.\n");
   salir_json(['ok' => $ok]);
 
 case 'lista':
@@ -377,6 +384,7 @@ case 'guardar': // título, mensaje, firmantes y campos (solo en borrador)
     $s['mensaje'] = trim(mb_substr((string)($e['mensaje'] ?? ''), 0, 2000));
     $s['orden'] = !empty($e['orden']);
     $s['codigo'] = !empty($e['codigo']);
+    if (isset($e['observadores'])) $s['observadores'] = array_map(fn($c) => ['correo' => $c], lista_correos(is_array($e['observadores']) ? implode(',', $e['observadores']) : (string)$e['observadores']));
     $fs = [];
     foreach ((array)($e['firmantes'] ?? []) as $k => $f) {
       $fid = preg_match('/^f[a-z0-9]{1,12}$/', (string)($f['id'] ?? '')) ? $f['id'] : 'f' . bin2hex(random_bytes(3));
@@ -436,6 +444,8 @@ case 'enviar':
       token_registrar($t, $s['id']);
     }
     unset($f);
+    if (!empty($s['observadores'])) foreach ($s['observadores'] as &$o) $o['token'] = bin2hex(random_bytes(20)); // sin «?? []»: así se modifica la lista real, no una copia
+    unset($o);
     $s['estado'] = 'enviado';
     $s['enviado'] = ahora();
     evento($s, 'tú', 'envió el sobre');
@@ -555,6 +565,8 @@ case 'final': // el panel sube los PDF ya estampados
     $s['completado'] = $s['completado'] ?? ahora();
     evento($s, 'tú', $nuevo ? 'generó los PDF finales' : 'volvió a generar los PDF finales');
   });
+  foreach ($s['observadores'] ?? [] as $o) if (!empty($o['token']))
+    correo($o['correo'], "Firmado · {$s['titulo']}", "Ya firmaron todos «{$s['titulo']}».\n\nDescarga los documentos firmados:\n" . url_base() . "/api.php?a=o_zip&t={$o['token']}\n\nTe llega este aviso porque te pidieron seguir este envío.\n");
   $avisar = !empty($_POST['avisar']);
   if ($avisar) foreach ($s['firmantes'] as $f) {
     correo($f['correo'], "Firmado · {$s['titulo']}", "Hola, {$f['nombre']}.\n\nYa firmaron todos «{$s['titulo']}». Puedes descargar tu copia desde el mismo enlace con el que firmaste.\n\nPara comprobar que un PDF es el original firmado: " . url_base() . "/verificar.html\n");
@@ -562,27 +574,7 @@ case 'final': // el panel sube los PDF ya estampados
   salir_json(['ok' => true, 'final' => $finales]);
 
 case 'zip':
-  $s = sobre_leer((string)($_GET['id'] ?? ''));
-  if (!class_exists('ZipArchive')) error_json('el hosting no tiene ZipArchive; descarga los PDF uno por uno');
-  $dir = ruta_sobre($s['id']);
-  $tmp = tempnam(sys_get_temp_dir(), 'rub');
-  $z = new ZipArchive();
-  $z->open($tmp, ZipArchive::OVERWRITE);
-  $docs = array_column($s['docs'], null, 'id');
-  $final = !empty($s['final']);
-  foreach ($final ? $s['final'] : $s['docs'] as $x) {
-    $doc = $docs[$final ? $x['doc'] : $x['id']];
-    $z->addFile($final ? "$dir/final/{$x['archivo']}" : "$dir/docs/{$x['archivo']}", $final ? firmado_nombre($doc['nombre']) : $doc['nombre']);
-    if ($final && !empty($x['pdf'])) $z->addFile("$dir/final/{$x['pdf']['archivo']}", firmado_nombre($doc['nombre'], 'pdf'));
-  }
-  $z->close();
-  $n = preg_replace('/[^\w\-]+/u', '-', $s['titulo']) . ($final ? '-firmado' : '') . '.zip';
-  header('Content-Type: application/zip');
-  header('Content-Length: ' . filesize($tmp));
-  header("Content-Disposition: attachment; filename=\"$n\"");
-  readfile($tmp);
-  unlink($tmp);
-  exit;
+  enviar_zip(sobre_leer((string)($_GET['id'] ?? '')));
 }
 
 error_json('acción desconocida', 404);
@@ -635,6 +627,29 @@ function firmar_como_yo(array &$s): void {
   }
   unset($f);
   if (!array_filter($s['firmantes'], fn($x) => $x['estado'] !== 'firmado')) { $s['estado'] = 'firmado'; evento($s, 'sistema', 'todas las firmas completas'); }
+}
+
+function enviar_zip(array $s): void {
+  if (!class_exists('ZipArchive')) error_json('el hosting no tiene ZipArchive; descarga los PDF uno por uno');
+  $dir = ruta_sobre($s['id']);
+  $tmp = tempnam(sys_get_temp_dir(), 'rub');
+  $z = new ZipArchive();
+  $z->open($tmp, ZipArchive::OVERWRITE);
+  $docs = array_column($s['docs'], null, 'id');
+  $final = !empty($s['final']);
+  foreach ($final ? $s['final'] : $s['docs'] as $x) {
+    $doc = $docs[$final ? $x['doc'] : $x['id']];
+    $z->addFile($final ? "$dir/final/{$x['archivo']}" : "$dir/docs/{$x['archivo']}", $final ? firmado_nombre($doc['nombre']) : $doc['nombre']);
+    if ($final && !empty($x['pdf'])) $z->addFile("$dir/final/{$x['pdf']['archivo']}", firmado_nombre($doc['nombre'], 'pdf'));
+  }
+  $z->close();
+  $n = preg_replace('/[^\w\-]+/u', '-', $s['titulo']) . ($final ? '-firmado' : '') . '.zip';
+  header('Content-Type: application/zip');
+  header('Content-Length: ' . filesize($tmp));
+  header("Content-Disposition: attachment; filename=\"$n\"");
+  readfile($tmp);
+  unlink($tmp);
+  exit;
 }
 
 function borrar_dir(string $d): void {

@@ -7,7 +7,7 @@
  */
 declare(strict_types=1);
 
-const RUBRIKAS_VERSION = '0.6';
+const RUBRIKAS_VERSION = '0.7';
 const MAX_PDF = 25 * 1024 * 1024;     // 25 MB por documento
 const MAX_IMG = 1536 * 1024;          // 1.5 MB por imagen de firma
 const DATA = __DIR__ . '/data';
@@ -164,6 +164,24 @@ function correo(string $para, string $asunto, string $texto): bool {
     return true;
   }
   return @mail($para, '=?UTF-8?B?' . base64_encode($asunto) . '?=', $texto, $h, '-f' . $desde);
+}
+
+/** «a@x.mx, b@y.com; c@z.org» → lista de correos válidos, sin repetir (máximo 10). */
+function lista_correos(string $txt): array {
+  $r = [];
+  foreach (preg_split('/[\s,;]+/', $txt) as $c) {
+    $c = strtolower(trim($c));
+    if ($c !== '' && filter_var($c, FILTER_VALIDATE_EMAIL) && !in_array($c, $r, true)) $r[] = $c;
+  }
+  return array_slice($r, 0, 10);
+}
+
+/** Avisos del avance: a ti (Ajustes) con el enlace al panel, y a quienes siguen este envío (sin panel). */
+function avisar(array $s, string $asunto, string $texto, bool $observadores = true): void {
+  $panel = url_base() . '/#' . $s['id'];
+  foreach (lista_correos(cfg()['aviso_a'] ?? '') as $c) correo($c, $asunto, "$texto\nVer el envío en Rubrikas:\n$panel\n");
+  if ($observadores) foreach ($s['observadores'] ?? [] as $o)
+    correo($o['correo'], $asunto, "$texto\nTe llega este aviso porque te pidieron seguir «{$s['titulo']}». No necesitas hacer nada.\n");
 }
 
 /** Firmante público: lo que sí puede ver cualquiera del sobre (sin tokens ni correos ajenos). */

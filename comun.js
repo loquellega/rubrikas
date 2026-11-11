@@ -4,7 +4,7 @@
  * © 2026 Héctor Cruz Juárez · https://hectorcruz.com.mx
  * Software libre bajo licencia GPL-3.0-or-later.
  */
-export const VERSION = '0.6';
+export const VERSION = '0.7';
 export const COLORES = ['#3d8b10', '#1f6fd1', '#d9622b', '#8a4fd1', '#b7791f', '#d6336c', '#138a7a', '#6b6b66'];
 export const TIPOS = {firma: 'Firma', iniciales: 'Iniciales', fecha: 'Fecha', nombre: 'Nombre', texto: 'Texto'};
 const ALTO_TIPO = {firma: 42, iniciales: 30, fecha: 18, nombre: 18, texto: 18};      // en puntos

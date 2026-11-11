@@ -1,4 +1,4 @@
-RUBRIKAS 0.6
+RUBRIKAS 0.7
 Firma de documentos PDF en tu propio servidor
 Parte de la colección Alchemy of Meaning (Alquimia del Significado)
 © 2026 Héctor Cruz Juárez · https://hectorcruz.com.mx
@@ -76,6 +76,13 @@ Documentos de Word (.docx)
   Los dos quedan registrados para "Comprobar". La vista en el navegador es muy
   parecida a Word, no idéntica; el archivo Word final es el que vale.
 
+Avisos a más personas
+  En Ajustes, "Avísame a estos correos" acepta varios correos separados por
+  comas: reciben el avance de todos tus envíos, con el enlace a tu panel.
+  En cada envío, Más opciones > "Avisar también a": correos que reciben el
+  avance de ese envío y, al final, un enlace para descargar los documentos
+  firmados (zip). No firman ni entran a tu panel.
+
 Tu firma en PNG
   Súbela en Ajustes o al pulsar "+ Yo también firmo". Si estás entre quienes
   firman, tu firma se coloca sola en tus lugares al enviar, sin abrir ningún
@@ -132,6 +139,10 @@ lib/                     pdf.js 4.10 (Apache-2.0), pdf-lib 1.17 (MIT), JSZip 3.1
 
 HISTORIAL
 ---------
+0.7 (11 de noviembre de 2026)
+  Avisos a varias personas: varios correos en Ajustes y "Avisar también a"
+  en cada envío, con enlace de descarga al terminar.
+
 0.6 (9 de noviembre de 2026)
   Firmar documentos de Word (.docx) y conservarlos en Word: lugares por
   líneas largas o etiquetas {firma Nombre}; las firmas se insertan ancladas a

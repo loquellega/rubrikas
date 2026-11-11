@@ -1,6 +1,6 @@
 # Rubrikas
 
-**Versión 0.6** · Parte de la colección Alchemy of Meaning (Alquimia del Significado) · © 2026 Héctor Cruz Juárez · [hectorcruz.com.mx](https://hectorcruz.com.mx) · GPL-3.0-or-later
+**Versión 0.7** · Parte de la colección Alchemy of Meaning (Alquimia del Significado) · © 2026 Héctor Cruz Juárez · [hectorcruz.com.mx](https://hectorcruz.com.mx) · GPL-3.0-or-later
 
 *English below.*
 
@@ -15,7 +15,7 @@ Rubrikas es una aplicación para firmar documentos en tu propio servidor, como S
 - **Tu propia firma guardada:** si estás entre quienes firman, tu firma PNG se coloca sola al enviar.
 - **Constancia:** cada documento final lleva una hoja con quién firmó, cuándo, desde qué IP y con qué método, más la huella SHA-256 del original y de cada firma.
 - **Comprobar:** `verificar.html` dice si un archivo es exactamente el que se firmó. El archivo se revisa en el navegador y no se sube.
-- **Opcional:** avisos por correo y un código de verificación por correo antes de firmar.
+- **Avisos por correo** a ti y a quien tú digas (varios correos separados por comas, por envío o para todos), y un código de verificación opcional antes de firmar.
 
 ## Validez
 
@@ -56,4 +56,4 @@ Una firma hecha aquí es una **firma electrónica simple**. Su peso como prueba 
 
 **Install:** upload the folder to a PHP 8 host with HTTPS, open it, and create the panel password. The `data/` folder is created on the server and must not be publicly reachable. The interface is in Spanish.
 
-**Version 0.6** · Part of the Alchemy of Meaning (Alquimia del Significado) collection · © 2026 Héctor Cruz Juárez · Free software under GPL-3.0-or-later.
+**Version 0.7** · Part of the Alchemy of Meaning (Alquimia del Significado) collection · © 2026 Héctor Cruz Juárez · Free software under GPL-3.0-or-later.
